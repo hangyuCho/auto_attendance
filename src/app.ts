@@ -22,12 +22,20 @@ interface RowProp {
   start?: string;
   end?: string;
 }
+interface TimeHistoryRowProp {
+  date: string;
+  day: string;
+  start?: string;
+  end?: string;
+  hasStart: boolean;
+  hasEnd: boolean;
+}
 
 const writeReport = async (month: string, rows: RowProp[]) => {
   let browser = await PUPPETEER.launch({
     headless: false,
     slowMo: 50,
-    args: ["--window-size-1920,1000"],
+    //args: ["--window-size-1920,1000"],
   });
 
   let page = await browser.newPage();
@@ -35,43 +43,124 @@ const writeReport = async (month: string, rows: RowProp[]) => {
   await page.goto(`https://attendance.moneyforward.com/my_page`);
 
   await page.waitForTimeout(5000);
-  await page.click(
-    ".attendance-button-mfid.attendance-button-link.attendance-button-size-wide"
-  );
 
-  await page.waitForSelector("input.inputItem");
+  let classByAcceptButton =
+    ".attendance-button-mfid.attendance-button-link.attendance-button-size-wide";
 
-  await page.$eval("input.inputItem", (el: any) => {
-    console.log(JSON.stringify(el.window, null, 2));
-  });
+  await page.click(classByAcceptButton);
+
   let id = MONEY_FORWARD_ID;
   let pw = MONEY_FORWARD_PW;
   await page.waitForTimeout(1000);
+
   await page.focus("input.inputItem");
   for await (const char of id.split("")) {
     await page.keyboard.press(char);
   }
   await page.keyboard.press("Enter");
 
-  await page.waitForTimeout(5000);
+  await page.waitForTimeout(3000);
 
-  await page.waitForTimeout(5000);
-
-  await page.waitForTimeout(1000);
   await page.focus("input.inputItem");
+
   for await (const char of pw.split("")) {
     await page.keyboard.press(char);
   }
   await page.keyboard.press("Enter");
 
-  await page.waitForTimeout(5000);
+  await page.waitForTimeout(3000);
 
   await page.goto(
     `https://attendance.moneyforward.com/my_page/bulk_attendances/2023-04-01/edit`
   );
-  await page.waitForTimeout(5000);
+  await page.waitForTimeout(3000);
+  //page.$eval(".attendance-table-contents tr", (el: any) => {
+  //  console.log(JSON.stringify(el.window, null, 2));
+  //});
+  //
 
-  await page.close();
+  let classBySelectCompany =
+    ".attendance-button-primary.attendance-button-size-small.attendance-button-fullwidth";
+
+  await page.click(classBySelectCompany);
+
+  await page.goto(
+    `https://attendance.moneyforward.com/my_page/bulk_attendances/2023-04-01/edit`
+  );
+
+  await page.waitForTimeout(3000);
+
+  await page.evaluate((rows_04: any[]) => {
+    [
+      ...Array.from(
+        document.querySelectorAll(".attendance-table-contents tr")
+      ).slice(2),
+    ].forEach((tr: any) => {
+      let day: string =
+        (tr.querySelector(".attendance-table-text-day") as HTMLElement)
+          .innerHTML ?? "1";
+      let timeHistroyRow: TimeHistoryRowProp = rows_04
+        .map((el: any) => {
+          return {
+            ...el,
+            day: el.date.split("/")[1],
+            hasStart: !!el.start,
+            hasEnd: !!el.end,
+          };
+        })
+        .find((el: any) => el.day == day);
+
+      let textArrayByTime: HTMLInputElement[] = tr?.querySelectorAll(
+        "input.attendance-input-field-small"
+      ) as HTMLInputElement[];
+
+      let workStart: string = timeHistroyRow.hasStart
+        ? (timeHistroyRow.start as string)
+        : "";
+      let workEnd: string = timeHistroyRow.hasStart
+        ? (timeHistroyRow.end as string)
+        : "";
+      let restStart: string = timeHistroyRow.hasStart ? "12:00" : "";
+      let restEnd: string = timeHistroyRow.hasStart ? "13:00" : "";
+
+      textArrayByTime[0].value = workStart;
+      textArrayByTime[1].value = workEnd;
+      textArrayByTime[2].value = restStart;
+      textArrayByTime[3].value = restEnd;
+    });
+  }, rows_04);
+
+  //  let trs = await page.$eval(
+  //    ".attendance-table-contents tr",
+  //    async (nodes: any) => {
+  //      let hoge: any = await nodes;
+  //
+  //      console.log(`nodes : ${hoge}`);
+  //      //   return await nodes.map(async (n: any) => {
+  //      //     console.log(`n : ${n}`);
+  //      //     return n;
+  //      //   });
+  //    }
+  //  );
+  //  let trsArray: any[] = [...Array.from(trs).slice(2)];
+  //
+  //  console.log(JSON.stringify(trsArray, null, 2));
+  //  console.log(`size : ${trsArray.length}`);
+  //  trsArray.forEach(async (el: any) => {
+  //    let tr = await el;
+  //    console.log(`tr: ${tr}`);
+  //    console.log(`tr size: ${tr.length}`);
+  //    console.log(JSON.stringify(tr, null, 2));
+  //    let texts: HTMLInputElement[] = tr.querySelector(
+  //      "input.attendance-input-field-small"
+  //    );
+  //
+  //    texts.forEach((text: HTMLInputElement, i: number) => {
+  //      text.value = `${i + 1}`;
+  //    });
+  //  });
+
+  //await page.close();
 };
 
 const readReport = async (fileName: string) => {
