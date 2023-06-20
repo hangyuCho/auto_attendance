@@ -31,7 +31,7 @@ interface TimeHistoryRowProp {
   hasEnd: boolean;
 }
 
-const writeReport = async (month: string, rows: RowProp[]) => {
+const init = async () => {
   let browser = await PUPPETEER.launch({
     headless: false,
     slowMo: 50,
@@ -39,7 +39,10 @@ const writeReport = async (month: string, rows: RowProp[]) => {
   });
 
   let page = await browser.newPage();
+  return page;
+};
 
+const login = async (page: any) => {
   await page.goto(`https://attendance.moneyforward.com/my_page`);
 
   await page.waitForTimeout(5000);
@@ -69,20 +72,34 @@ const writeReport = async (month: string, rows: RowProp[]) => {
   await page.keyboard.press("Enter");
 
   await page.waitForTimeout(3000);
+};
 
-  await page.goto(
-    `https://attendance.moneyforward.com/my_page/bulk_attendances/2023-${month}-01/edit`
-  );
+const writeReport = async (page: any, month: string, rows: RowProp[]) => {
+  let editPage: string = `https://attendance.moneyforward.com/my_page/bulk_attendances/2023-${month}-01/edit`;
+
+  await page.goto(editPage);
+
   await page.waitForTimeout(3000);
 
-  let classBySelectCompany =
-    ".attendance-button-primary.attendance-button-size-small.attendance-button-fullwidth";
+  try {
+    await page.click(
+      ".attendance-button-primary.attendance-button-size-small.attendance-button-fullwidth"
+    );
+  } catch (e) {
+    try {
+      await page.click(
+        ".attendance-button-mfid.attendance-button-link.attendance-button-size-wide"
+      );
 
-  await page.click(classBySelectCompany);
+      await page.waitForTimeout(3000);
 
-  await page.goto(
-    `https://attendance.moneyforward.com/my_page/bulk_attendances/2023-04-01/edit`
-  );
+      await page.click("input[type='submit'].submitBtn");
+
+      await page.waitForTimeout(3000);
+    } catch (e) {}
+  }
+
+  await page.goto(editPage);
 
   await page.waitForTimeout(3000);
 
@@ -154,20 +171,15 @@ const writeReport = async (month: string, rows: RowProp[]) => {
       submit.click();
     }
   );
-  //
-  //  await page.click(
-  //    ""
-  //  );
-  //await page.close();
+  await page.waitForTimeout(5000);
 };
 
 const readReport = async (fileName: string) => {
   let source = PATH.join(__dirname, `resources/${fileName}`);
-  let workbook = XLSX.readFile(source);
-  let sheet = workbook.Sheets[`sheet1`];
-  let rows = XLSX.utils.sheet_to_json(sheet);
-
-  console.log(JSON.stringify(rows, null, 2));
+  let workbook = await XLSX.readFile(source);
+  let sheet = await workbook.Sheets[`sheet1`];
+  let rows = await XLSX.utils.sheet_to_json(sheet);
+  return Array.from(rows);
 };
 
 const rows_04: RowProp[] = [
@@ -205,16 +217,22 @@ const rows_04: RowProp[] = [
 
 const main = async () => {
   let source = PATH.join(__dirname, `resources/`);
-  FS.readdirSync(source).forEach((xlsxFile: string) => {
-    /* xlsxFile Ex) 01.xlsx */
-    // readReport(xlsxFile);
-    //writeReport(`04`, rows_04);
-  });
+
+  let page = await init();
   try {
-    writeReport(`04`, rows_04);
+    await login(page);
+
+    for await (const xlsxFile of FS.readdirSync(source)) {
+      /* xlsxFile Ex) 01.xlsx */
+      let rows: any = await readReport(xlsxFile);
+      //console.log(JSON.stringify(rows, null, 2));
+      console.log(`file name : ${xlsxFile}`);
+      await writeReport(page, `${xlsxFile.split(".")[0]}`, rows);
+    }
   } catch (e: any) {
     console.error(`Error : ${e}`);
   }
+  await page.close();
 };
 
 main();
