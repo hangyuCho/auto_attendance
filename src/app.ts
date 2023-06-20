@@ -71,13 +71,9 @@ const writeReport = async (month: string, rows: RowProp[]) => {
   await page.waitForTimeout(3000);
 
   await page.goto(
-    `https://attendance.moneyforward.com/my_page/bulk_attendances/2023-04-01/edit`
+    `https://attendance.moneyforward.com/my_page/bulk_attendances/2023-${month}-01/edit`
   );
   await page.waitForTimeout(3000);
-  //page.$eval(".attendance-table-contents tr", (el: any) => {
-  //  console.log(JSON.stringify(el.window, null, 2));
-  //});
-  //
 
   let classBySelectCompany =
     ".attendance-button-primary.attendance-button-size-small.attendance-button-fullwidth";
@@ -90,76 +86,78 @@ const writeReport = async (month: string, rows: RowProp[]) => {
 
   await page.waitForTimeout(3000);
 
-  await page.evaluate((rows_04: any[]) => {
-    [
-      ...Array.from(
-        document.querySelectorAll(".attendance-table-contents tr")
-      ).slice(2),
-    ].forEach((tr: any) => {
-      let day: string =
-        (tr.querySelector(".attendance-table-text-day") as HTMLElement)
-          .innerHTML ?? "1";
-      let timeHistroyRow: TimeHistoryRowProp = rows_04
-        .map((el: any) => {
-          return {
-            ...el,
-            day: el.date.split("/")[1],
-            hasStart: !!el.start,
-            hasEnd: !!el.end,
-          };
-        })
-        .find((el: any) => el.day == day);
+  let timeHistroyRows: TimeHistoryRowProp[] = rows.map((el: any) => {
+    return {
+      ...el,
+      day: el.date.split("/")[1],
+      hasStart: !!el.start,
+      hasEnd: !!el.end,
+    };
+  });
 
-      let textArrayByTime: HTMLInputElement[] = tr?.querySelectorAll(
-        "input.attendance-input-field-small"
-      ) as HTMLInputElement[];
+  var i = -1;
+  for await (const excelRow of timeHistroyRows) {
+    i++;
+    await page.focus(
+      `.attendance-table-contents tr:nth-child(${
+        i + 1
+      }) input.attendance-input-field-small`
+    );
 
-      let workStart: string = timeHistroyRow.hasStart
-        ? (timeHistroyRow.start as string)
-        : "";
-      let workEnd: string = timeHistroyRow.hasStart
-        ? (timeHistroyRow.end as string)
-        : "";
-      let restStart: string = timeHistroyRow.hasStart ? "12:00" : "";
-      let restEnd: string = timeHistroyRow.hasStart ? "13:00" : "";
+    if (excelRow.hasStart || excelRow.hasEnd) {
+      if (excelRow.hasStart) {
+        for await (const char of (excelRow.start as string).split("")) {
+          await page.keyboard.press(char);
+        }
+      }
+      await page.waitForTimeout(50);
+      await page.keyboard.press("Tab");
+      await page.waitForTimeout(50);
+      await page.keyboard.press("Tab");
+      await page.waitForTimeout(50);
+      if (excelRow.hasEnd) {
+        for await (const char of (excelRow.end as string).split("")) {
+          await page.keyboard.press(char);
+        }
+      }
+      await page.waitForTimeout(50);
+      await page.keyboard.press("Tab");
+      await page.waitForTimeout(50);
+      await page.keyboard.press("Tab");
+      await page.waitForTimeout(50);
 
-      textArrayByTime[0].value = workStart;
-      textArrayByTime[1].value = workEnd;
-      textArrayByTime[2].value = restStart;
-      textArrayByTime[3].value = restEnd;
-    });
-  }, rows_04);
+      let hourByStartStr: any = excelRow.start?.split(":")[0];
+      let hourByEndStr: any = excelRow.end?.split(":")[0];
 
-  //  let trs = await page.$eval(
-  //    ".attendance-table-contents tr",
-  //    async (nodes: any) => {
-  //      let hoge: any = await nodes;
+      let hourByStart: number = +hourByStartStr;
+      let hourByEnd: number = +hourByEndStr;
+
+      if (hourByStart < 12 && 12 < hourByEnd) {
+        for await (const char of "12:00".split("")) {
+          await page.keyboard.press(char);
+        }
+        await page.waitForTimeout(50);
+        await page.keyboard.press("Tab");
+        await page.waitForTimeout(50);
+        await page.keyboard.press("Tab");
+        await page.waitForTimeout(50);
+        for await (const char of "13:00".split("")) {
+          await page.keyboard.press(char);
+        }
+      }
+    }
+  }
+
+  page.$eval(
+    "input[type='submit'].attendance-button-primary.attendance-button-size-medium",
+    (submit: HTMLInputElement) => {
+      submit.click();
+    }
+  );
   //
-  //      console.log(`nodes : ${hoge}`);
-  //      //   return await nodes.map(async (n: any) => {
-  //      //     console.log(`n : ${n}`);
-  //      //     return n;
-  //      //   });
-  //    }
+  //  await page.click(
+  //    ""
   //  );
-  //  let trsArray: any[] = [...Array.from(trs).slice(2)];
-  //
-  //  console.log(JSON.stringify(trsArray, null, 2));
-  //  console.log(`size : ${trsArray.length}`);
-  //  trsArray.forEach(async (el: any) => {
-  //    let tr = await el;
-  //    console.log(`tr: ${tr}`);
-  //    console.log(`tr size: ${tr.length}`);
-  //    console.log(JSON.stringify(tr, null, 2));
-  //    let texts: HTMLInputElement[] = tr.querySelector(
-  //      "input.attendance-input-field-small"
-  //    );
-  //
-  //    texts.forEach((text: HTMLInputElement, i: number) => {
-  //      text.value = `${i + 1}`;
-  //    });
-  //  });
-
   //await page.close();
 };
 
@@ -185,12 +183,12 @@ const rows_04: RowProp[] = [
   { date: "4/10", start: "8:53", end: "18:06" },
   { date: "4/11", start: "8:50", end: "18:53" },
   { date: "4/12", start: "8:50", end: "18:14" },
-  { date: "4/13", start: "8.52", end: "18:11" },
+  { date: "4/13", start: "8:52", end: "18:11" },
   { date: "4/14", start: "8:50", end: "18:16" },
   { date: "4/15" },
   { date: "4/16" },
   { date: "4/17" },
-  { date: "4/18", start: "8'53", end: "18:26" },
+  { date: "4/18", start: "8:53", end: "18:26" },
   { date: "4/19", start: "8:00", end: "18:08" },
   { date: "4/20", start: "8:00", end: "18:18" },
   { date: "4/21", start: "8:51", end: "12:02" },
@@ -212,7 +210,11 @@ const main = async () => {
     // readReport(xlsxFile);
     //writeReport(`04`, rows_04);
   });
-  writeReport(`04`, rows_04);
+  try {
+    writeReport(`04`, rows_04);
+  } catch (e: any) {
+    console.error(`Error : ${e}`);
+  }
 };
 
 main();
