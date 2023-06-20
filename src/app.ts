@@ -182,39 +182,6 @@ const readReport = async (fileName: string) => {
   return Array.from(rows);
 };
 
-const rows_04: RowProp[] = [
-  { date: "4/1" },
-  { date: "4/2" },
-  { date: "4/3", start: "8:55", end: "18:31" },
-  { date: "4/4", start: "8:50", end: "18:01" },
-  { date: "4/5", start: "8:56", end: "18:13" },
-  { date: "4/6", start: "8:50", end: "18:26" },
-  { date: "4/7", start: "8:50", end: "18:38" },
-  { date: "4/8" },
-  { date: "4/9" },
-  { date: "4/10", start: "8:53", end: "18:06" },
-  { date: "4/11", start: "8:50", end: "18:53" },
-  { date: "4/12", start: "8:50", end: "18:14" },
-  { date: "4/13", start: "8:52", end: "18:11" },
-  { date: "4/14", start: "8:50", end: "18:16" },
-  { date: "4/15" },
-  { date: "4/16" },
-  { date: "4/17" },
-  { date: "4/18", start: "8:53", end: "18:26" },
-  { date: "4/19", start: "8:00", end: "18:08" },
-  { date: "4/20", start: "8:00", end: "18:18" },
-  { date: "4/21", start: "8:51", end: "12:02" },
-  { date: "4/22" },
-  { date: "4/23" },
-  { date: "4/24", start: "8:51", end: "18:37" },
-  { date: "4/25", start: "8:53", end: "19:38" },
-  { date: "4/26", start: "8:49", end: "18:28" },
-  { date: "4/27", start: "8:53", end: "18:35" },
-  { date: "4/28", start: "8:50", end: "18:00" },
-  { date: "4/29" },
-  { date: "4/30" },
-];
-
 const main = async () => {
   let source = PATH.join(__dirname, `resources/`);
 
