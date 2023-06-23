@@ -56,7 +56,7 @@ const login = async (page: any) => {
   let pw = MONEY_FORWARD_PW;
   await page.waitForTimeout(1000);
 
-  await page.focus("input.inputItem");
+  await page.focus("input[placeholder='example@moneyforward.com']");
   for await (const char of id.split("")) {
     await page.keyboard.press(char);
   }
@@ -64,7 +64,7 @@ const login = async (page: any) => {
 
   await page.waitForTimeout(3000);
 
-  await page.focus("input.inputItem");
+  await page.focus("input[type='password']");
 
   for await (const char of pw.split("")) {
     await page.keyboard.press(char);
