@@ -161,11 +161,12 @@ const writeReport = async (page: any, month: string, rows: RowProp[]) => {
         for await (const char of "13:00".split("")) {
           await page.keyboard.press(char);
         }
+        await page.keyboard.press("Tab");
       }
     }
   }
 
-  page.$eval(
+  await page.$eval(
     "input[type='submit'].attendance-button-primary.attendance-button-size-medium",
     (submit: HTMLInputElement) => {
       submit.click();
