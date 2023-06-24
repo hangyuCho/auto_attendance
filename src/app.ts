@@ -165,6 +165,8 @@ const writeReport = async (page: any, month: string, rows: RowProp[]) => {
     }
   }
 
+  await page.waitForTimeout(8000);
+
   page.$eval(
     "input[type='submit'].attendance-button-primary.attendance-button-size-medium",
     (submit: HTMLInputElement) => {
